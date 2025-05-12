@@ -1,0 +1,131 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import * as tmImage from "@teachablemachine/image";
+
+export default function ClothingDetection() {
+  const videoRef = useRef();
+  const canvasRef = useRef();
+  const clothingModelRef = useRef(null);
+
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        // Load the Teachable Machine model
+        const URL = "/models/clothing";
+        clothingModelRef.current = await tmImage.load(URL + "/model.json", URL + "/metadata.json");
+        console.log("Clothing model loaded successfully");
+
+        // Start the video feed after the model is loaded
+        startVideo();
+      } catch (error) {
+        console.error("Error loading models:", error);
+      }
+    };
+
+    const startVideo = () => {
+      navigator.mediaDevices
+        .getUserMedia({ video: {} })
+        .then((stream) => {
+          videoRef.current.srcObject = stream;
+        })
+        .catch((err) => console.error("Video error:", err));
+    };
+
+    loadModels();
+  }, []);
+
+  const handleVideoPlay = () => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const context = canvas.getContext("2d");
+
+    const displaySize = {
+      width: video.videoWidth,
+      height: video.videoHeight,
+    };
+
+    setInterval(async () => {
+      // Capture the current frame and predict clothing
+      const predictions = await clothingModelRef.current.predict(video);
+
+      console.log("Predictions:", predictions);
+
+      // Clear the canvas before redrawing
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.font = "16px Arial";
+      context.fillStyle = "lightgreen";
+
+      if (predictions.length > 0) {
+        const prediction = predictions[0]; // Assuming the highest confidence prediction
+        const { className, probability } = prediction;
+
+        // Here, we simulate the bounding box position and size.
+        // Ideally, you should use real bounding box data from the model if available.
+        const box = getBoundingBox(prediction);
+
+        // Draw a box around the detected clothing item
+        context.strokeStyle = "red";
+        context.lineWidth = 2;
+        context.strokeRect(box.x, box.y, box.width, box.height);
+
+        // Add label with probability
+        context.fillText(
+          `Clothing: ${className} (${(probability * 100).toFixed(1)}%)`,
+          box.x,
+          box.y + box.height + 20
+        );
+      }
+    }, 300);
+  };
+
+  // Function to simulate bounding box coordinates
+  // In reality, you would need to extract the bounding box coordinates from the prediction.
+  const getBoundingBox = (prediction) => {
+    // Simulated bounding box based on prediction class
+    const box = {
+      x: 50,
+      y: 50,
+      width: 200,
+      height: 100,
+    };
+
+    // Adjust the box size and position based on the class or other model data if available
+    if (prediction.className === "Shirt") {
+      box.x = 100;
+      box.y = 150;
+      box.width = 180;
+      box.height = 120;
+    } else if (prediction.className === "Pants") {
+      box.x = 150;
+      box.y = 250;
+      box.width = 200;
+      box.height = 150;
+    }
+
+    return box;
+  };
+
+  return (
+    <div style={{ textAlign: "center", position: "relative" }}>
+      <h1>Clothing Detection</h1>
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        onPlay={handleVideoPlay}
+        style={{ width: "720px", borderRadius: "10px" }}
+      />
+      <canvas
+        ref={canvasRef}
+        width={720}
+        height={560}
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+        }}
+      />
+    </div>
+  );
+}
