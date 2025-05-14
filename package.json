@@ -9,6 +9,9 @@
     "lint": "next lint",
     "preinstall": "npx npm-force-resolutions"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "resolutions": {
     "hoek": "4.2.1"
   },
@@ -22,14 +25,10 @@
     "@tensorflow-models/face-landmarks-detection": "^1.0.6",
     "@tensorflow/tfjs": "^1.7.4",
     "@tensorflow/tfjs-core": "^4.22.0",
-    "@vime/react": "^5.4.1",
-    "canvas-sketch": "^0.7.7",
     "face-api.js": "^0.22.2",
-    "ml5": "^1.0.1",
     "motion": "^12.10.5",
     "next": "15.3.2",
     "npm-force-resolutions": "^0.0.10",
-    "p5": "^2.0.1",
     "patch-package": "^8.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -39,8 +38,10 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
-    "tailwindcss": "^4"
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.6"
   }
 }

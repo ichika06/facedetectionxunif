@@ -6,19 +6,10 @@ import * as faceapi from "face-api.js";
 import Webcam from "react-webcam";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Assume your clothing model's output provides bounding box coordinates
-// and class probabilities. The structure of this output is crucial.
-// Example of expected output for each detected clothing item:
-// {
-//   bbox: [x, y, width, height], // Normalized coordinates (0 to 1)
-//   className: "shirt",
-//   probability: 0.85
-// }
-
 function FaceDetection() {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
-  const modelRef = useRef(null); // TensorFlow model for clothing
+  const modelRef = useRef(null);
 
   const [detections, setDetections] = useState([]);
   const [videoSize, setVideoSize] = useState({ width: 0, height: 0 });
@@ -29,17 +20,16 @@ function FaceDetection() {
   const [isTFReady, setIsTFReady] = useState(false);
   const [detectedClothesAboveThreshold, setDetectedClothesAboveThreshold] = useState([]);
 
-  const predictionThreshold = 0.6; // 60% threshold
+  const predictionThreshold = 0.4;
 
   useEffect(() => {
     const loadModels = async () => {
       const MODEL_URL = "/models/faceapi";
-      const TF_MODEL_URL = "/models/clothing/model.json"; // Path to your TF clothing model
-      const METADATA_URL = "/models/clothing/metadata.json"; // Path to your TF metadata
+      const TF_MODEL_URL = "/models/clothing/model.json";
+      const METADATA_URL = "/models/clothing/metadata.json";
 
       try {
-        // Explicitly set the TensorFlow.js backend
-        // await tf.setBackend('webgl'); // Or 'cpu' if you prefer
+        await tf.setBackend('webgl'); // Or 'cpu' if you prefer
 
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
@@ -86,26 +76,15 @@ function FaceDetection() {
         .div(tf.scalar(255.0))
         .expandDims();
 
-      // Assuming your model's predict function returns an array of objects
-      // where each object contains: { bbox: [x, y, width, height], score: ..., class: ... }
       const predictions = await modelRef.current.predict(imageTensor).data();
 
-      // **Important:** You will need to process the raw `predictions` from your TensorFlow model here.
-      // This processing will depend entirely on the output format of your model.
-      // The goal is to extract bounding boxes, class names (using `classNames`), and confidence scores.
-
-      // **Mock processing - Replace with your actual post-processing logic**
       const processedPredictions = [];
-      // Example: Assuming your raw predictions are a flat array that needs reshaping
-      // and association with class names and hypothetical bounding boxes.
       if (predictions && classNames.length > 0) {
-        // This is a placeholder - adapt to your model's output structure
         for (let i = 0; i < classNames.length; i++) {
-          const probability = predictions[i]; // Assuming a direct mapping for demonstration
+          const probability = predictions[i];
           if (probability > predictionThreshold) {
-            // Mock bounding box - your model should output these
-            const x = Math.random() * (videoElement.videoWidth - 100);
-            const y = Math.random() * (videoElement.videoHeight - 100);
+            const x = 10; // Fixed x-coordinate for bottom left
+            const y = videoElement.videoHeight - 110; // Fixed y-coordinate for bottom left
             const width = 100;
             const height = 100;
 
@@ -118,7 +97,6 @@ function FaceDetection() {
         }
       }
 
-      // Convert normalized bounding boxes to pixel coordinates
       const scaledPredictions = processedPredictions.map(prediction => ({
         ...prediction,
         scaledBBox: [
@@ -238,44 +216,34 @@ function FaceDetection() {
               </motion.div>
             );
           })}
-          {detectedClothesAboveThreshold.map((prediction, i) => {
-            const [x, y, width, height] = prediction.scaledBBox;
-            return (
-              <motion.div
-                key={`clothing-${i}`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                  left: x,
-                  top: y,
-                  width,
-                  height,
-                }}
-                exit={{ opacity: 0 }}
-                transition={{
-                  duration: 0.1,
-                  ease: "easeInOut",
-                }}
-                style={{
-                  position: "absolute",
-                  border: "2px solid #ff0000",
-                  borderRadius: "8px",
-                  zIndex: 2,
-                  color: "#ff0000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                  padding: "8px",
-                  backgroundColor: "rgba(0, 0, 0, 0.5)",
-                  pointerEvents: "none",
-                  textAlign: "center",
-                }}
-              >
-                {prediction.className}: {(prediction.probability * 100).toFixed(2)}%
-              </motion.div>
-            );
-          })}
         </AnimatePresence>
+        {detectedClothesAboveThreshold.map((prediction, i) => {
+          const [x, y, width, height] = prediction.scaledBBox;
+          return (
+            <div
+              key={`clothing-${i}`}
+              style={{
+                position: "absolute",
+                border: "2px solid #ff0000",
+                borderRadius: "8px",
+                zIndex: 2,
+                color: "#ff0000",
+                fontWeight: "bold",
+                fontSize: "16px",
+                padding: "8px",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                pointerEvents: "none",
+                textAlign: "center",
+                left: x,
+                top: y,
+                width,
+                height,
+              }}
+            >
+              {prediction.className !== "NoDetect" ? `${prediction.className}: ${(prediction.probability * 100).toFixed(2)}%` : prediction.className}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
